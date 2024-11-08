@@ -92,25 +92,11 @@ def generate_polynomial_regression(df, x, y, degree, title, filename):
 
     y_poly_pred = model.predict(x_poly)
 
-    plt.scatter(x_data, y_data, color='blue')
-    plt.plot(x_data, y_poly_pred, color='red')
-    plt.title(f"{title} (Degree {degree})")
-    save_fig(filename)
-
-def generate_logarithmic_regression(df, x, y, title, filename):
-    df = preprocess_numeric_cols(df.copy(), [x, y])
-    df = df[df[x] > 0]  # Filtra valores de x > 0 para evitar log de 0 ou negativo
-    x_data = np.log(df[x]).values.reshape(-1, 1)
-    y_data = df[y].values.reshape(-1, 1)
-
-    model = LinearRegression()
-    model.fit(x_data, y_data)
-
-    y_log_pred = model.predict(x_data)
-
-    plt.scatter(df[x], y_data, color='blue')
-    plt.plot(df[x], y_log_pred, color='red')
+    create_figure()
+    plt.scatter(x_data, y_data, color='blue', label='Dados Reais')
+    plt.plot(x_data, y_poly_pred, color='red', label=f'Regressão Polinomial (Grau {degree})')
     plt.title(title)
+    plt.legend()
     save_fig(filename)
 
 def generate_exponential_regression(df, x, y, title, filename):
@@ -124,14 +110,20 @@ def generate_exponential_regression(df, x, y, title, filename):
 
     y_exp_pred = np.exp(model.predict(x_data))
 
-    plt.scatter(x_data, df[y], color='blue')
-    plt.plot(x_data, y_exp_pred, color='red')
+    create_figure()
+    plt.scatter(df[x], df[y], color='blue', label='Dados Reais')
+    plt.plot(df[x], y_exp_pred, color='purple', label='Regressão Exponencial')
     plt.title(title)
+    plt.legend()
     save_fig(filename)
 
 # Função para gerar sumário estatístico detalhado com intervalo de confiança e valor de p
 def generate_statistical_summary_detailed(df, y_var, filename="sumario_detalhado.txt"):
     try:
+        # Convert categorical columns to numeric
+        df['Sexo_Num'] = pd.to_numeric(df['Sexo_Num'], errors='coerce')
+        df['Modelo_Num'] = pd.to_numeric(df['Modelo_Num'], errors='coerce')
+
         X = df[['Idade', 'Sexo_Num', 'Modelo_Num']]
         X = sm.add_constant(X)
         y = df[y_var]
@@ -143,6 +135,19 @@ def generate_statistical_summary_detailed(df, y_var, filename="sumario_detalhado
             f.write(summary.as_text())
     except Exception as e:
         print(f"Erro ao gerar o sumário estatístico detalhado: {e}")
+
+# Função para gerar gráficos adicionais
+def generate_boxplot(df, x, y, hue, title, filename):
+    create_figure()
+    sns.boxplot(x=x, y=y, hue=hue, data=df, palette=DEFAULT_PALETTE)
+    plt.title(title)
+    save_fig(filename)
+
+def generate_barplot(df, x, y, hue, title, filename):
+    create_figure()
+    sns.barplot(x=x, y=y, hue=hue, data=df, palette=DEFAULT_PALETTE)
+    plt.title(title)
+    save_fig(filename)
 
 if __name__ == "__main__":
     drive.mount(DRIVE_MOUNT_PATH, force_remount=True)
@@ -161,14 +166,10 @@ if __name__ == "__main__":
 
         # Gráficos de violino bipartido e não bipartido
         generate_violinplot(df, 'Modelo', 'Idade', 'Sexo', 'Violin: Idade por Sexo e Modelo', 'violin_idade_modelo_sexo.png', split=True)
-        generate_violinplot(df, 'Sexo', 'Idade', 'Modelo', 'Violin: Idade por Modelo e Sexo', 'violin_idade_sexo_modelo.png', split=True)
-        generate_violinplot(df, 'Modelo', 'Idade', 'Sexo', 'Violin: Idade por Modelo e Sexo', 'violin_idade_modelo_sexo_2.png', split=False)
-        generate_violinplot(df, 'Sexo', 'Idade', 'Modelo', 'Violin: Idade por Sexo e Modelo', 'violin_idade_sexo_modelo_2.png', split=False)
-        generate_violinplot(df, 'Modelo', 'Idade', 'Sexo', 'Violin: Idade por Sexo e Modelo 3', 'violin_idade_modelo_sexo_3.png', split=True)
+        generate_violinplot(df, 'Sexo', 'Idade', 'Modelo', 'Violin: Idade por Sexo e Modelo', 'violin_idade_sexo_modelo.png', split=False)
 
         # Histogramas
         generate_histplot(df, 'Idade', 'Sexo', 'Histograma: Idade por Sexo', 'hist_idade_sexo.png', bins=20)
-        generate_histplot(df, 'Idade', None, 'Histograma: Idade Geral', 'hist_idade_geral.png', bins=20)
 
         # KDEs
         generate_kdeplot(df, 'Idade', 'Modelo', 'KDE: Idade por Modelo', 'kde_idade_modelo.png')
@@ -176,10 +177,11 @@ if __name__ == "__main__":
 
         # Gráficos de regressões não lineares
         generate_polynomial_regression(df, 'Idade', 'Sexo_Num', 2, 'Regressão Polinomial (Grau 2)', 'polynomial_degree_2.png')
-        generate_polynomial_regression(df, 'Idade', 'Sexo_Num', 3, 'Regressão Polinomial (Grau 3)', 'polynomial_degree_3.png')
         generate_polynomial_regression(df, 'Idade', 'Modelo_Num', 3, 'Regressão Polinomial (Grau 3)', 'polynomial_model_degree_3.png')
-        generate_logarithmic_regression(df, 'Idade', 'Sexo_Num', 'Regressão Logarítmica', 'logarithmic_regression.png')
-        generate_logarithmic_regression(df, 'Idade', 'Modelo_Num', 'Regressão Logarítmica Modelo', 'logarithmic_model_regression.png')
 
         # Sumário estatístico detalhado
         generate_statistical_summary_detailed(df, 'Idade')
+
+        # Gráficos adicionais
+        generate_boxplot(df, 'Modelo', 'Idade', 'Sexo', 'Boxplot: Idade por Sexo e Modelo', 'boxplot_idade_modelo_sexo.png')
+        generate_barplot(df, 'Modelo', 'Idade', 'Sexo', 'Barplot: Idade por Sexo e Modelo', 'barplot_idade_modelo_sexo.png')
