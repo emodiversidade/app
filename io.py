@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 """io.ipynb"""
 
+!pip install pyswarms
+
+# -*- coding: utf-8 -*-
 # Importando as bibliotecas necessárias
 import os
 import numpy as np
